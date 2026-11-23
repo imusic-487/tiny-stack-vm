@@ -31,8 +31,7 @@ function run(p, q) {
   let sp = 0, cp = 0, ol = 0, ip = 0, pc = 0, st = 0;
   const end = (code) => [o.subarray(0, ol), code];
   for (;;) {
-    // Trap order per ISA.md: step limit, pc range, unknown opcode,
-    // truncated immediate, then stack underflow / overflow, then the op's own traps.
+    // Trap order per ISA.md: steps, pc, opcode, immediate, stack, then the op.
     if (st === STEP_LIMIT) return end(10);
     if (pc < 0 || pc >= p.length) return end(9);
     const op = p[pc];

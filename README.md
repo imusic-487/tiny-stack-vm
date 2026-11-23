@@ -20,4 +20,4 @@ Step limit 1,000,000, output limit 65,536 bytes.
 
 Local check: 40/40 practice instances match the kit's reference answers,
 plus 45 hand-written edge cases and 300 randomized programs, all matching
-the reference VM byte for byte on stdout and exit code.
+the reference VM byte for byte.
