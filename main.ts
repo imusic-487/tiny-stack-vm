@@ -7,6 +7,8 @@ import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 // Opcode byte -> [immediate bytes, pops, pushes]. Unknown bytes trap 5.
+const STEP_LIMIT = 1000000;
+const OUTPUT_MAX = 65536;
 const T = {
   0: [0, 0, 0], 1: [1, 0, 1], 2: [4, 0, 1], 3: [0, 1, 0], 4: [0, 1, 2],
   5: [0, 2, 2], 6: [0, 2, 3], 7: [0, 3, 3],
@@ -25,11 +27,13 @@ function run(p, q) {
   const D = new Int32Array(256);
   const C = new Int32Array(64);
   const M = new Int32Array(256);
-  const o = new Uint8Array(65536);
+  const o = new Uint8Array(OUTPUT_MAX);
   let sp = 0, cp = 0, ol = 0, ip = 0, pc = 0, st = 0;
   const end = (code) => [o.subarray(0, ol), code];
   for (;;) {
-    if (st === 1000000) return end(10);
+    // Trap order per ISA.md: step limit, pc range, unknown opcode,
+    // truncated immediate, then stack underflow / overflow, then the op's own traps.
+    if (st === STEP_LIMIT) return end(10);
     if (pc < 0 || pc >= p.length) return end(9);
     const op = p[pc];
     const t = T[op];
@@ -115,14 +119,14 @@ function run(p, q) {
       }
       case 80: {
         const bytes = enc.encode(String(D[sp - 1]));
-        if (ol + bytes.length > 65536) return end(11);
+        if (ol + bytes.length > OUTPUT_MAX) return end(11);
         sp--;
         o.set(bytes, ol);
         ol += bytes.length;
         break;
       }
       case 81:
-        if (ol + 1 > 65536) return end(11);
+        if (ol + 1 > OUTPUT_MAX) return end(11);
         o[ol++] = D[--sp] & 255;
         break;
       case 82: D[sp++] = ip < q.length ? q[ip++] : -1; break;
